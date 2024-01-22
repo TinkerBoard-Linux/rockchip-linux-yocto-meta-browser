@@ -18,24 +18,30 @@ SRC_URI += " \
     file://0005-BUILD-do-not-specify-march-on-arm.patch \
     file://0007-Delete-compiler-options-not-available-in-release-ver.patch \
     file://0008-avoid-link-latomic-failure-on-CentOS-8-host.patch \
-    file://0009-nomerge-attribute-on-declaration-is-only-available-s.patch \
     file://0011-Revert-Use-ffile-compilation-dir-instead-of-fdebug-c.patch \
-    file://0013-Fix-html_minifier-script-for-node-v12.patch \
     file://0015-drop-gsimple-template-names.patch \
     file://0016-cast-to-bool-to-avoid-constexpr-error.patch \
+    file://0017-Revert-Fix-std-span-autodetection-7805.patch \
+    file://0018-Only-default-operator-on-declaration.patch \
+    file://0019-Backport-constexpr-std-string-fixes.patch \
+    file://0020-Revert-__attribute__-and-alignas-changes.patch \
+    file://0021-Add-missing-typename-s.patch \
+    file://0022-Backport-Avoid-capturing-structured-bindings.patch \
+    file://0023-Backport-IWYU-for-translate-TranslateUILanguagesMana.patch \
+    file://0026-Backport-std-string-ends_with-is-C-20.-Use-base-Ends.patch \
+    file://0027-Don-t-pass-disable-auto-upgrade-debug-info-to-linker.patch \
+    file://0028-Avoid-capturing-structured-bindings.patch \
+    file://0029-Backport-IWYU-for-translate-TranslateUiLanguagesMana.patch \
+    file://0030-Backport-Avoid-operator-which-is-C-20-specific.patch \
+    file://0031-Backport-ozone-wayland-Fix-nullptr-deref-in-WaylandW.patch \
 "
 
 SRC_URI:append:libc-musl = "\
     file://musl/0001-mallinfo-implementation-is-glibc-specific.patch \
-    file://musl/0002-execinfo-implementation-is-glibc-specific.patch \
     file://musl/0003-Define-TEMP_FAILURE_RETRY-and-__si_fields.patch \
-    file://musl/0004-blink-Fix-build-with-musl.patch \
     file://musl/0005-breakpad-Fix-build-with-musl.patch \
     file://musl/0006-fontconfig-Musl-does-not-have-rand_r-API.patch \
     file://musl/0007-__libc_malloc-is-internal-to-glibc.patch \
-    file://musl/0008-gnu_libc_version-API-is-glibc-specific.patch \
-    file://musl/0009-provide-res_ninit-and-nclose-APIs-on-non-glibc-linux.patch \
-    file://musl/0011-crashpad-Fix-build-with-musl.patch \
     file://musl/0012-debug-Fix-build-with-musl.patch \
     file://musl/0015-mallopt-is-glibc-specific-API.patch \
     file://musl/0018--Use-monotonic-clock-for-pthread_cond_timedwait-with-.patch \
@@ -43,9 +49,16 @@ SRC_URI:append:libc-musl = "\
     file://musl/0021-pthread_getname_np.patch \
     file://musl/0022-sys-stat.patch \
     file://musl/scoped-file.patch \
-    file://musl/fix-narrowing-cast.patch \
     file://musl/credentials-header.patch \
     file://musl/fstatat64.patch \
+    file://musl/no-res-ninit-nclose.patch \
+    file://musl/fix-libc-version-include.patch \
+"
+
+# OE defines _TIME_BITS only for 32-bit ARM (ignoring architectures that we
+# don't support), see its meta/conf/distro/include/time64.inc.
+SRC_URI:append:arm = "\
+    file://0031-Fix-ARM-build-with-recent-glibc.patch \
 "
 
 ANY_OF_DISTRO_FEATURES = "opengl vulkan"
@@ -85,6 +98,9 @@ DEPENDS += " \
     virtual/libgl \
 "
 DEPEND:append:runtime-llvm = " compiler-rt-native libcxx-native"
+DEPENDS:append:libc-musl = " libexecinfo"
+
+LDFLAGS:append:libc-musl = " -lexecinfo"
 
 # The wrapper script we use from upstream requires bash.
 RDEPENDS:${PN} = "bash"
@@ -286,6 +302,10 @@ GN_ARGS += ' \
 # This parameter is added by limit-number-of-LTO-jobs.patch with the default value of 8,
 # but we can use whatever user configured in PARALLEL_MAKE
 GN_ARGS += 'max_jobs_per_link="${@oe.utils.parallel_make_argument(d, '%d')}"'
+
+# We haven't figured out how to best support Rust yet, so disable it for now.
+# See the discussion at https://github.com/OSSystems/meta-browser/issues/723.
+GN_ARGS += 'enable_rust=false'
 
 # ARM builds need special additional flags (see ${S}/build/config/arm.gni).
 # If we do not pass |arm_arch| and friends to GN, it will deduce a value that
