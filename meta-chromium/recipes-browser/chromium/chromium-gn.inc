@@ -10,55 +10,65 @@ inherit features_check gtk-icon-cache qemu
 OUTPUT_DIR = "out/Release"
 B = "${S}/${OUTPUT_DIR}"
 
-SRC_URI += " \
-    file://0001-limit-number-of-LTO-jobs.patch \
-    file://0002-Remove-the-GN-settings-done-for-clang-that-conflict-.patch \
-    file://0003-v8-qemu-wrapper.patch \
-    file://0004-wrapper-extra-flags.patch \
-    file://0005-BUILD-do-not-specify-march-on-arm.patch \
-    file://0007-Delete-compiler-options-not-available-in-release-ver.patch \
-    file://0008-avoid-link-latomic-failure-on-CentOS-8-host.patch \
-    file://0011-Revert-Use-ffile-compilation-dir-instead-of-fdebug-c.patch \
-    file://0015-drop-gsimple-template-names.patch \
-    file://0016-cast-to-bool-to-avoid-constexpr-error.patch \
-    file://0017-Revert-Fix-std-span-autodetection-7805.patch \
-    file://0018-Only-default-operator-on-declaration.patch \
-    file://0019-Backport-constexpr-std-string-fixes.patch \
-    file://0020-Revert-__attribute__-and-alignas-changes.patch \
-    file://0021-Add-missing-typename-s.patch \
-    file://0022-Backport-Avoid-capturing-structured-bindings.patch \
-    file://0023-Backport-IWYU-for-translate-TranslateUILanguagesMana.patch \
-    file://0026-Backport-std-string-ends_with-is-C-20.-Use-base-Ends.patch \
-    file://0027-Don-t-pass-disable-auto-upgrade-debug-info-to-linker.patch \
-    file://0028-Avoid-capturing-structured-bindings.patch \
-    file://0029-Backport-IWYU-for-translate-TranslateUiLanguagesMana.patch \
-    file://0030-Backport-Avoid-operator-which-is-C-20-specific.patch \
-    file://0031-Backport-ozone-wayland-Fix-nullptr-deref-in-WaylandW.patch \
+# Backported patches.
+SRC_URI += "\
+    file://backport/IWYU-for-chrome-browser-ui-views-dark_mode_.patch \
+    file://backport/IWYU-for-net-filter-zstd_source_stream.cc.patch \
+    file://backport/IWYU-for-components-user_education-common-p.patch \
+    file://backport/atspi-mark-possibly-unused-gn-variables.patch \
+    file://backport/Revert-recent-C-20-usage-in-CFX_FillRenderO.patch \
+    file://backport/IWYU-for-chrome-browser-ui-tabs-organizatio.patch \
+    file://backport/IWYU-for-content-browser-generic_sensor-fra.patch \
+    file://backport/IWYU-for-g-c-service-shared_image-ozone_ima.patch \
+    file://backport/Make-toolchain_supports_rust_thin_lto-configurable.patch \
 "
+# Non-specific patches.
+SRC_URI += "\
+    file://0001-Remove-the-GN-settings-done-for-clang-that-conflict-.patch \
+    file://0002-v8-qemu-wrapper.patch \
+    file://0003-wrapper-extra-flags.patch \
+    file://0004-Delete-compiler-options-not-available-in-release-ver.patch \
+    file://0005-avoid-link-latomic-failure-on-CentOS-8-host.patch \
+    file://0006-Revert-__attribute__-and-alignas-changes.patch \
+    file://0007-Add-missing-typename-s.patch \
+    file://0008-Don-t-pass-unknown-LLVM-options.patch \
+    file://0009-Avoid-capturing-structured-bindings.patch \
+    file://0010-Revert-Reland-Reland-mte-refactor-the-tagging-functi.patch \
+    file://0011-Avoid-parenthesized-initialization-of-aggregates.patch \
+    file://0012-Fix-constexpr-variable-cannot-have-non-literal-type-.patch \
+    file://0013-Fix-undefined-symbol-PaintOpWriter-SerializedSize-un.patch \
+    file://0014-Fix-implicitly-deleted-default-constructor-build-err.patch \
+    file://0015-Don-t-delete-CrashKeyWithName-dtor.patch \
+    file://0016-Use-base-ranges-instead-of-std-ranges.patch \
+    file://0017-Use-the-correct-path-to-libclang_rt.builtins.a.patch \
+    file://0018-Adjust-the-Rust-build-to-our-needs.patch \
+    file://0019-Don-t-require-profiler_builtins.rlib.patch \
+"
+# ARM/AArch64-specific patches.
+SRC_URI:append:arm = "\
+    file://arm/0001-BUILD-do-not-specify-march-on-arm.patch \
+    file://arm/0002-Fix-ARM-build-with-recent-glibc.patch \
+    file://arm/0003-Fix-static_assert-failed-build-error-on-32-bit-ARM.patch \
+"
+SRC_URI:append:aarch64 = "${@bb.utils.contains('TUNE_FEATURES', 'crypto', '', ' file://arm/0004-Fix-AES-crypto-SIGILL-on-rpi4-64.patch', d)}"
 
+# musl-specific patches.
 SRC_URI:append:libc-musl = "\
     file://musl/0001-mallinfo-implementation-is-glibc-specific.patch \
-    file://musl/0003-Define-TEMP_FAILURE_RETRY-and-__si_fields.patch \
-    file://musl/0005-breakpad-Fix-build-with-musl.patch \
-    file://musl/0006-fontconfig-Musl-does-not-have-rand_r-API.patch \
-    file://musl/0007-__libc_malloc-is-internal-to-glibc.patch \
-    file://musl/0012-debug-Fix-build-with-musl.patch \
-    file://musl/0015-mallopt-is-glibc-specific-API.patch \
-    file://musl/0018--Use-monotonic-clock-for-pthread_cond_timedwait-with-.patch \
-    file://musl/0020-Fix-tab-crashes-on-musl.patch \
-    file://musl/0021-pthread_getname_np.patch \
-    file://musl/0022-sys-stat.patch \
-    file://musl/scoped-file.patch \
-    file://musl/credentials-header.patch \
-    file://musl/fstatat64.patch \
-    file://musl/no-res-ninit-nclose.patch \
-    file://musl/fix-libc-version-include.patch \
-"
-
-# OE defines _TIME_BITS only for 32-bit ARM (ignoring architectures that we
-# don't support), see its meta/conf/distro/include/time64.inc.
-SRC_URI:append:arm = "\
-    file://0031-Fix-ARM-build-with-recent-glibc.patch \
+    file://musl/0002-Define-TEMP_FAILURE_RETRY-and-__si_fields.patch \
+    file://musl/0003-breakpad-Fix-build-with-musl.patch \
+    file://musl/0004-fontconfig-Musl-does-not-have-rand_r-API.patch \
+    file://musl/0005-__libc_malloc-is-internal-to-glibc.patch \
+    file://musl/0006-debug-Fix-build-with-musl.patch \
+    file://musl/0007-mallopt-is-glibc-specific-API.patch \
+    file://musl/0008-Use-monotonic-clock-for-pthread_cond_timedwait-with-.patch \
+    file://musl/0009-Fix-tab-crashes-on-musl.patch \
+    file://musl/0010-pthread_getname_np.patch \
+    file://musl/0011-sys-stat.patch \
+    file://musl/0012-credentials-header.patch \
+    file://musl/0013-fstatat64.patch \
+    file://musl/0014-no-res-ninit-nclose.patch \
+    file://musl/0015-fix-libc-version-include.patch \
 "
 
 ANY_OF_DISTRO_FEATURES = "opengl vulkan"
@@ -66,7 +76,7 @@ ANY_OF_DISTRO_FEATURES = "opengl vulkan"
 # Append instead of assigning; the gtk-icon-cache class inherited above also
 # adds packages to DEPENDS.
 DEPENDS += " \
-    alsa-lib \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-lib', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'at-spi2-core', '', d)} \
     atk \
     bison-native \
@@ -95,9 +105,11 @@ DEPENDS += " \
     pkgconfig-native \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio', '', d)} \
     qemu-native \
+    rust \
+    rust-native \
     virtual/libgl \
 "
-DEPEND:append:runtime-llvm = " compiler-rt-native libcxx-native"
+DEPENDS:append:runtime-llvm = " compiler-rt compiler-rt-native libcxx-native"
 DEPENDS:append:libc-musl = " libexecinfo"
 
 LDFLAGS:append:libc-musl = " -lexecinfo"
@@ -159,6 +171,7 @@ GN_ARGS = " \
         is_component_build=${@bb.utils.contains('PACKAGECONFIG', 'component-build', 'true', 'false', d)} \
         use_gnome_keyring=false \
         use_kerberos=false \
+        use_alsa=${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'true', 'false', d)} \
         use_pulseaudio=${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'true', 'false', d)} \
         use_system_libjpeg=true \
 "
@@ -170,11 +183,6 @@ GN_ARGS += "use_system_freetype=false"
 # Qt support appears to be underdevelopment in Nov 2022 so disable now
 # but a PACKAGECONFIG option should be added when the feature is ready.
 GN_ARGS += "use_qt=false"
-
-# Closure_compile needs to be disabled to avoid pulling in java dependencies,
-# which are typicaly not wanted. It started to happen after https://crrev.com/c/1278470
-# This argument was renamed to enable_js_type_check after https://crrev.com/c/2248564
-GN_ARGS += "enable_js_type_check=false"
 
 # Make sure pkg-config, when used with the host's toolchain to build the
 # binaries we need to run on the host, uses the right pkg-config to avoid
@@ -293,19 +301,36 @@ GN_ARGS += ' \
         gold_path="" \
         host_toolchain="//build/toolchain/yocto:yocto_native" \
         is_clang=true \
-        clang_base_path="${@clang_install_path(d)}" \
         clang_use_chrome_plugins=false \
         target_cpu="${@gn_target_arch_name(d)}" \
         v8_snapshot_toolchain="//build/toolchain/yocto:yocto_target" \
+'
+
+# Make sure Chromium is able to find clang libraries. See
+# 0023-Use-the-correct-path-to-libclang_rt.builtins.a.patch and the
+# add_clang_symlink and copy_clang_library tasks for more context.
+GN_ARGS += ' \
+        clang_base_path="${@clang_install_path(d)}" \
+        clang_version="latest" \
 '
 
 # This parameter is added by limit-number-of-LTO-jobs.patch with the default value of 8,
 # but we can use whatever user configured in PARALLEL_MAKE
 GN_ARGS += 'max_jobs_per_link="${@oe.utils.parallel_make_argument(d, '%d')}"'
 
-# We haven't figured out how to best support Rust yet, so disable it for now.
-# See the discussion at https://github.com/OSSystems/meta-browser/issues/723.
-GN_ARGS += 'enable_rust=false'
+# Use our own toolchain instead of the one upstream provides. See
+# //build/config/rust.gni for more details.
+# Note: the value of rustc_version doesn't matter, it's only used to ensure all
+# Rust code is rebuilt after updating the Rust toolchain. This is irrelevant for
+# our build setup, but not setting it leads to an error.
+GN_ARGS += ' \
+        rust_sysroot_absolute="${RECIPE_SYSROOT_NATIVE}/usr" \
+        rustc_version="custom" \
+        rust_target_triple_vendor_for_target="${TARGET_VENDOR}" \
+'
+
+# This would require the Rust toolchain to use the same LLVM version as clang.
+GN_ARGS += 'toolchain_supports_rust_thin_lto=false'
 
 # ARM builds need special additional flags (see ${S}/build/config/arm.gni).
 # If we do not pass |arm_arch| and friends to GN, it will deduce a value that
@@ -387,12 +412,12 @@ do_create_v8_qemu_wrapper[dirs] = "${B}"
 addtask create_v8_qemu_wrapper after do_patch before do_configure
 
 # Check the LLVMVERSION defined in the meta-clang layer. Given Chromium is
-# developed using new C++ features, the LLVMVERSION has to be >= 12. Otherwise,
+# developed using new C++ features, the LLVMVERSION has to be >= 14. Otherwise,
 # it is not guaranteed that Chromium will compile.
 python do_check_llvm_version () {
   from distutils.version import LooseVersion
 
-  min_llvm_version = "12.0.0"
+  min_llvm_version = "14.0.0"
   llvm_version = d.getVar('LLVMVERSION', False)
   if not llvm_version:
     bb.warn("Unable to determine LLVM version. Chromium may not be compiled "
@@ -402,7 +427,7 @@ python do_check_llvm_version () {
   if LooseVersion(llvm_version) < LooseVersion(min_llvm_version):
     bb.fatal("Your LLVMVERSION (%s) is lower than the minimum required "
              "LLVMVERSION (%s). If you are using dunfell, make sure you "
-             "use clang12 branch." % (llvm_version, min_llvm_version))
+             "use dunfell-clang14 branch." % (llvm_version, min_llvm_version))
 }
 addtask check_llvm_version before do_configure
 
@@ -428,6 +453,42 @@ do_add_nodejs_symlink () {
 	ln -sf "${nodejs_native_path}" "${chromium_node_dir}/node"
 }
 addtask add_nodejs_symlink after do_configure before do_compile
+
+do_add_clang_symlink () {
+    # Creates a `latest` symlink in the native sysroot's /usr/lib/clang
+    # directory that points to /usr/lib/clang/$CLANG_VERSION. Chromium manually
+    # links against libclang_rt.builtins.a and uses the `clang_version` GN
+    # variable to find it. This allows us to set it to the same value for all
+    # Yocto releases.
+    cd "${RECIPE_SYSROOT_NATIVE}/usr/lib/clang"
+    # find the directory containing the library
+    for dir in *; do
+        if [ -n "$(find $dir -name 'libclang_rt.builtins*')" ] ; then
+            ln -sf "$dir" latest
+            break
+        fi
+    done
+}
+addtask add_clang_symlink after do_configure before do_compile
+
+do_copy_clang_library () {
+    # Chromium needs to link against libclang_rt.builtins.a for both host and
+    # target code, and expects to find both libraries in the same directory
+    # (thanks to 0023-Use-the-correct-path-to-libclang_rt.builtins.a.patch).
+    cd "${RECIPE_SYSROOT}"
+    lib_file="$(find usr/lib/clang -name 'libclang_rt.builtins*')"
+    lib_dir="$(dirname $lib_file)"
+    cp "$lib_file" "${RECIPE_SYSROOT_NATIVE}/$lib_dir"
+}
+addtask copy_clang_library after do_configure before do_compile
+
+do_copy_target_rustlibs () {
+    # Chromium needs a single Rust sysroot that contains the rustlibs for both
+    # the host and target, so we copy the target rustlibs to the native sysroot.
+    rustlib_src_dir="${RECIPE_SYSROOT}/usr/lib/rustlib/${TARGET_ARCH}"*
+    cp -r $rustlib_src_dir "${RECIPE_SYSROOT_NATIVE}/usr/lib/rustlib"
+}
+addtask copy_target_rustlibs after do_configure before do_compile
 
 do_configure() {
 	cd ${S}

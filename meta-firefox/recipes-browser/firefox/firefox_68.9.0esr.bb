@@ -6,7 +6,7 @@ DEPENDS += "curl startup-notification libevent cairo libnotify \
             virtual/libgl pulseaudio icu dbus-glib \
             nodejs-native cbindgen-native \
             yasm-native nasm-native unzip-native \
-            virtual/${TARGET_PREFIX}rust cargo-native ${RUSTLIB_DEP} \
+            rust-native cargo-native ${RUSTLIB_DEP} \
             gtk+3 \
            "
 RDEPENDS:${PN}-dev = "dbus"
@@ -57,6 +57,7 @@ SRC_URI = "https://ftp.mozilla.org/pub/firefox/releases/${PV}/source/firefox-${P
            file://wayland/egl/bug1571603-Disable-eglQueryString-nullptr-EGL_EXTENSIONS.patch \
            file://wayland/egl/0001-GLLibraryLoader-Use-given-symbol-lookup-function-fir.patch \
            file://wayland/egl/0001-Mark-GLFeature-framebuffer_multisample-as-unsupporte.patch \
+           file://0001-Fix-build-with-gcc-13.patch \
            "
 
 SRC_URI[sha256sum] = "935105e1a8a97d64daffb372690e2b566b5f07641f01470929dbbc82d20d4407"
